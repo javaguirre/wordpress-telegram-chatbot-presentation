@@ -1,0 +1,32 @@
+version: '2'
+services:
+  wordpress:
+    image: wordpress
+    ports:
+      - 8080:80
+    environment:
+      WORDPRESS_DB_PASSWORD: wordpressodb
+
+  mysql:
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: wordpressodb
+
+  # docker run --rm --interactive --tty \
+  # --volume $PWD:/app \
+  # composer install/update
+
+  bot:
+    build: .
+    stdin_open: true
+    tty: true
+    volumes:
+      - $PWD:/app
+    depends_on:
+      - wordpress
+      - mysql
+    command: php -S 0.0.0.0:8081 app/app.php
+    ports:
+      - 8081:8081
+    env_file:
+      - bot.env

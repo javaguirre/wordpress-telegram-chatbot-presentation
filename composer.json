@@ -1,0 +1,8 @@
+{
+    "require": {
+        "rmccue/requests": ">=1.0",
+        "silex/silex": "~2.0",
+        "longman/telegram-bot": "*",
+        "monolog/monolog": ">=1.0"
+    }
+}
