@@ -8,7 +8,21 @@ define("BASE_WEBHOOK_URL", getenv('BASE_WEBHOOK_URL'));
 define("TELEGRAM_BOT_KEY", getenv('TELEGRAM_BOT_KEY'));
 define("TELEGRAM_BOT_NAME", getenv('TELEGRAM_BOT_NAME'));
 define('WEBHOOK_URL', BASE_WEBHOOK_URL . '/webhook');
-define('WORDPRESS_API_URL', getenv('WORDPRESS_API_URL'));
+define('WORDPRESS_API_URL', getenv('WORDPRESS_API_URL') . '/wp-json/wp/v2/');
+
+class WordpressApiService {
+    var $url;
+
+    function __construct($url) {
+        $this->url = $url;
+    }
+
+    function get() {
+        $headers = array('Accept' => 'application/json');
+        $request = Requests::get($this->url . 'posts', $headers);
+        return $request->body;
+    }
+}
 
 class TelegramService {
     var $telegram;
@@ -39,13 +53,17 @@ $app->register(new Silex\Provider\MonologServiceProvider(), array(
     'monolog.logfile' => 'php://stderr'
 ));
 
-$app['telegram_service'] = function () use($log) {
+$app['telegram_service'] = function () use ($log) {
     $log->info('Telegram init');
     return new TelegramService(TELEGRAM_BOT_KEY, TELEGRAM_BOT_NAME);
 };
 
+$app['wordpress_service'] = function () use ($log) {
+    $log->info('WordPress Client');
+};
+
 $app['conversation_service'] = function () {
-    // return new Service();
+    return new WordpressApiService(WORDPRESS_API_URL);
 };
 
 $app->get('/init', function() use ($app, $log, $hook_url) {
@@ -57,6 +75,7 @@ $app->get('/init', function() use ($app, $log, $hook_url) {
 
 $app->get('/', function() use ($app, $log) {
     $log->info('Hello!');
+    $log->info($app['conversation_service']->get());
     return $app->json(array('hello' => 'world'));
 });
 
