@@ -63,7 +63,13 @@ class ApiAiService {
             )
         );
 
-        return json_decode($response->body, true);
+        $body = json_decode($response->body, true);
+
+        return array(
+            'intentName' => $body['result']['metadata']['intentName'],
+            'parameters' => $body['result']['parameters'],
+            'speech'     => $body['result']['speech']
+        );
     }
 }
 
@@ -192,11 +198,28 @@ $app->get('/init', function() use ($app, $log, $hook_url) {
 
 $app->post('/webhook', function(Symfony\Component\HttpFoundation\Request $request) use ($app, $log) {
     $data = json_decode($request->getContent(), true);
+    $log->info($request->getContent());
     $app['telegram_service']->handle();
-    $apiai_response = $app['apiai_service']->send($data['message']['text']);
-    $log->info(json_encode($apiai_response));
-    $intentName = $apiai_response['result']['metadata']['intentName'];
-    $parameters = $apiai_response['result']['parameters'];
+
+    if (array_key_exists('message', $data)) {
+        $text = $data['message']['text'];
+        $chat_id = $data['message']['chat']['id'];
+    } else {
+        $text = $data['callback_query']['data'];
+        $chat_id = $data['callback_query']['message']['chat']['id'];
+    }
+    $apiai_response = $app['apiai_service']->send($text);
+    $intentName = $apiai_response['intentName'];
+    $parameters = $apiai_response['parameters'];
+    $output = $apiai_response['speech'];
+
+    $with_keyboard = true;
+    $inline_keyboard = new Longman\TelegramBot\Entities\InlineKeyboard([
+        ['text' => 'ver', 'callback_data' => 'ver'],
+        ['text' => 'lista', 'callback_data' => 'lista'],
+        ['text' => 'crear', 'callback_data' => 'crear'],
+        ['text' => 'editar', 'callback_data' => 'editar'],
+    ]);
 
     switch ($intentName) {
     case 'list':
@@ -206,28 +229,42 @@ $app->post('/webhook', function(Symfony\Component\HttpFoundation\Request $reques
         if (array_filter($parameters)) {
             $output = $app['wordpress_service']->show($parameters['id']);
         } else {
-            $output = $apiai_response['result']['speech'];
+            $output = $apiai_response['speech'];
+            $with_keyboard = false;
         }
         break;
     case 'create':
         if (array_filter($parameters)) {
             $app['wordpress_service']->create($parameters);
+        } else {
+            $output = $apiai_response['result']['speech'];
+            $with_keyboard = false;
         }
-        $output = $apiai_response['result']['speech'];
         break;
     case 'edit':
         if (array_filter($parameters)) {
             $app['wordpress_service']->edit($parameters);
+        } else {
+            $output = $apiai_response['result']['speech'];
+            $with_keyboard = false;
         }
-        $output = $apiai_response['result']['speech'];
         break;
     }
 
+    if (!$output) {
+        $output = 'Hola!';
+    }
+
     $response = [
-        'chat_id'    => $data['message']['chat']['id'],
+        'chat_id'    => $chat_id,
         'text'       => $output,
         'parse_mode' => 'Html'
     ];
+
+    if ($with_keyboard) {
+        $response['reply_markup'] = $inline_keyboard;
+    }
+
     $result = Longman\TelegramBot\Request::sendMessage($response);
     $log->info($result);
 
