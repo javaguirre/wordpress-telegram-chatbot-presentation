@@ -6,6 +6,7 @@ body { font-family: 'Droid Serif'; }
 h1, h2 {
     font-family: 'Yanone Kaffeesatz';
     font-weight: normal;
+    text-align: center;
 }
 
 h4, a {
@@ -42,7 +43,7 @@ h4, a {
 }
 
 .remark-slide-content {
-    font-size: 30px;
+    font-size: 35px;
 }
 
 .clear {

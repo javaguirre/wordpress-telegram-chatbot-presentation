@@ -10,7 +10,7 @@ class: inverse, center
 
 # @javaguirre
 
-[![:scale 70%](./images/reply.png)](https://www.reply.ai)
+[![:scale 110%](./images/reply.png)](https://www.reply.ai)
 
 ---
 
@@ -22,6 +22,14 @@ class: inverse, center
 * Imita comportamiento humano
 
 [![:scale 60%](https://media.giphy.com/media/dwiCV5d7qfCqk/giphy.gif)]()
+
+---
+
+class: inverse, center
+
+# Chatbots
+
+![:scale 90%](https://media.giphy.com/media/UukXwaGIamJ1u/giphy.gif)
 
 ---
 
@@ -39,7 +47,9 @@ class: inverse, center
 
 # Por dónde empezamos
 
-![:scale 90%](https://media.giphy.com/media/xTka034bGJ8H7wH1io/giphy.gif)
+![:scale 100%](https://media.giphy.com/media/xTka034bGJ8H7wH1io/giphy.gif)
+
+
 
 ---
 
@@ -49,8 +59,6 @@ class: inverse, center
 
 ![:scale 90%](./images/telegram.png)
 
-
-[Documentación](https://docs.api.ai/docs/telegram-integration)
 
 ---
 
@@ -78,6 +86,47 @@ class: inverse, center
 
 ---
 
+class: inverse
+
+# Servicio Web
+
+- `/init` Inicializar la aplicación de Telegram
+- `/webhook` Nos llegan los mensajes que llegan a Telegram
+
+---
+
+class: inverse
+
+# Servicios externos
+
+* [Api.AI](https://api.ai/)
+* [Telegram](https://telegram.org/)
+* [WordPress Rest API](http://v2.wp-api.org/)
+
+---
+
+class: inverse
+
+# WP Rest API
+
+* GET `/posts`      -> Lista posts
+* GET `/posts/{id}` -> Ver post
+* POST `/posts`     -> Crear nuevo
+* PUT `/posts/{id}` -> Editar post
+
+---
+
+class: inverse
+
+# Tecnología
+
+* [Silex](https://silex.sensiolabs.org/), Microframework basado en Symfony
+* [Requests](https://github.com/rmccue/Requests), biblioteca para hacer peticiones HTTP
+* [Ngrok](https://ngrok.com/), Túnel HTTP a localhost
+* [Docker](https://www.docker.com/what-docker), plataforma de contenedores, entorno de desarrollo
+
+---
+
 class: inverse, center
 
 # Manos a la obra
@@ -88,6 +137,6 @@ class: inverse, center
 
 class: inverse, center, middle
 
-# Gracias
+# ¡Gracias!
 #### Javier Aguirre [@javaguirre](https://javaguirre.me)
 #### [Github](https://github.com/javaguirre) | [Twitter](https://twitter.com/javaguirre)
