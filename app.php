@@ -32,28 +32,31 @@ class ConversationService {
         $intentName = $apiai_response['intentName'];
         $parameters = $apiai_response['parameters'];
         $output = $apiai_response['speech'];
+        $wordpressService = $app['wordpress_service'];
 
         switch ($intentName) {
             case 'list':
-                $output = $app['wordpress_service']->showList();
+                $output = $wordpressService->showList();
                 break;
+            // We can refactor this part, less verbose, but this way
+            // it's clear what we do depending on the intent
             case 'show':
                 if (array_filter($parameters)) {
-                    $output = $app['wordpress_service']->show($parameters['id']);
+                    $output = $wordpressService->show($parameters['id']);
                 } else {
                     $with_keyboard = false;
                 }
                 break;
             case 'create':
                 if (array_filter($parameters)) {
-                    $app['wordpress_service']->create($parameters);
+                    $wordpressService->create($parameters);
                 } else {
                     $with_keyboard = false;
                 }
                 break;
             case 'edit':
                 if (array_filter($parameters)) {
-                    $app['wordpress_service']->edit($parameters);
+                    $wordpressService->edit($parameters);
                 } else {
                     $with_keyboard = false;
                 }
@@ -177,11 +180,13 @@ class WordpressApiService {
     }
 
     function showList() {
-        $output = array();
-
         $request = Requests::get($this->url . 'posts', $this->headers);
-
         $posts = json_decode($request->body, true);
+        return $this->getListFormatted($posts);
+    }
+
+    function getListFormatted($posts) {
+        $output = array();
 
         foreach ($posts as $post) {
             $post_pretty = sprintf(
@@ -222,7 +227,10 @@ class WordpressApiService {
             $this->headers
         );
         $post = json_decode($response->body, true);
+        return $this->getShowFormatted($post);
+    }
 
+    function getShowFormatted($post) {
         $post_pretty = sprintf(
             '<b>%d %s</b> <a href="%s">enlace</a> %s <pre>%s</pre>',
             $post['id'],
@@ -255,7 +263,6 @@ class WordpressApiService {
     }
 }
 
-$hook_url = WEBHOOK_URL;
 $log = new Logger('name');
 
 $app = new Silex\Application();
@@ -280,9 +287,9 @@ $app['apiai_service'] = function () use ($log) {
     return new ApiAiService(APIAI_TOKEN);
 };
 
-$app->get('/init', function() use ($app, $log, $hook_url) {
+$app->get('/init', function() use ($app, $log) {
     $service = $app['telegram_service'];
-    $service->setWebhook($hook_url);
+    $service->setWebhook(WEBHOOK_URL);
     return $app->json(array('init' => 'telegram'));
 });
 
