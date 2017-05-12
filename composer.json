@@ -4,5 +4,8 @@
         "silex/silex": "~2.0",
         "longman/telegram-bot": "*",
         "monolog/monolog": ">=1.0"
+    },
+    "autoload": {
+        "psr-0": {"OdbBot": "/src"}
     }
 }
