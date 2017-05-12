@@ -4,10 +4,10 @@ require __DIR__ . '/vendor/autoload.php';
 
 use Monolog\Logger;
 
-use OdbBot\Services\TelegramService;
-use OdbBot\Services\ConversationService;
-use OdbBot\Services\ApiAiService;
-use OdbBot\Services\WordpressApiService;
+use OdbBot\TelegramService;
+use OdbBot\ConversationService;
+use OdbBot\ApiAiService;
+use OdbBot\WordpressApiService;
 
 // Environment variables we need
 define("BASE_WEBHOOK_URL", getenv('BASE_WEBHOOK_URL'));
