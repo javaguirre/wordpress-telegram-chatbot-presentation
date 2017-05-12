@@ -40,17 +40,27 @@ class ApiAiService {
     private $headers;
 
     function __construct($token) {
-        $this->url = 'https://api.api.ai/v1/query?lang=es&sessionId=';
+        $this->url = 'https://api.api.ai/v1/query';
         $this->headers = [
-            'Authorization' => 'Bearer ' . $token
+            'Authorization' => 'Bearer ' . $token,
+            'Content-type'  => 'application/json'
         ];
     }
 
     function send($text) {
-        $sessionId = uniqid();
-        $response = Requests::get(
-            $this->url . $sessionId . '&query='. $text,
-            $this->headers
+        $sessionId = 'mysession';
+        $response = Requests::post(
+            $this->url,
+            $this->headers,
+            json_encode(
+                array(
+                    'lang'       => 'es',
+                    'sessionId'  => $sessionId,
+                    'query'      => $text,
+                    'action'     => 'post',
+                    'parameters' => $parameters
+                )
+            )
         );
 
         return json_decode($response->body, true);
@@ -65,12 +75,12 @@ class WordpressApiService {
         $this->url = $url;
         $authorization = base64_encode($username . ':' . $password);
         $this->headers = [
-            'Accept' => 'application/json',
+            'Content-type'  => 'application/json',
             'Authorization' => 'Basic ' . $authorization
         ];
     }
 
-    function get() {
+    function showList() {
         $output = array();
 
         $request = Requests::get($this->url . 'posts', $this->headers);
@@ -79,31 +89,73 @@ class WordpressApiService {
 
         foreach ($posts as $post) {
             $post_pretty = sprintf(
-                '*%s* [link](%s)', $post['title']['rendered'], $post['link']);
+                '<b>%d %s</b> <a href="%s">enlace</a> %s',
+                $post['id'],
+                $post['title']['rendered'],
+                $post['link'],
+                chr(10) . chr(10)
+            );
             array_push($output, $post_pretty);
         }
 
-        return implode('\n', $output);
+        return implode(' ', $output);
     }
 
-    function create($title, $content, $tags) {
+    function create($parameters) {
         $output = array();
         $data = json_encode(
             array(
-                'title'     => $title,
-                'content'   => $content,
-                'status'    => 'publish',
-                'tags'      => $tags
+                'title'     => $parameters['title'],
+                'content'   => $parameters['content'],
+                'status'    => 'publish'
             )
         );
 
-        $request = Requests::post(
+        $response = Requests::post(
             $this->url . 'posts',
             $this->headers,
             $data
         );
 
-        return implode('\n', $output);
+        return $response->body;
+    }
+
+    function show($id) {
+        $response = Requests::get(
+            $this->url . 'posts/' . $id,
+            $this->headers
+        );
+        $post = json_decode($response->body, true);
+
+        $post_pretty = sprintf(
+            '<b>%d %s</b> <a href="%s">enlace</a> %s <pre>%s</pre>',
+            $post['id'],
+            $post['title']['rendered'],
+            $post['link'],
+            chr(10) . chr(10),
+            strip_tags($post['excerpt']['rendered'])
+        );
+
+        return $post_pretty;
+    }
+
+    function edit($parameters) {
+        $output = array();
+        $data = json_encode(
+            array(
+                'title'     => $parameters['title'],
+                'content'   => $parameters['content'],
+                'status'    => 'publish'
+            )
+        );
+
+        $response = Requests::put(
+            $this->url . 'posts/' . $parameters['id'],
+            $this->headers,
+            $data
+        );
+
+        return $response->body;
     }
 }
 
@@ -144,21 +196,37 @@ $app->post('/webhook', function(Symfony\Component\HttpFoundation\Request $reques
     $apiai_response = $app['apiai_service']->send($data['message']['text']);
     $log->info(json_encode($apiai_response));
     $intentName = $apiai_response['result']['metadata']['intentName'];
+    $parameters = $apiai_response['result']['parameters'];
 
-    if ($intentName == 'lista') {
-        $output = $app['wordpress_service']->get();
-    } elseif ($intentName == 'crear') {
-        $log->info('CREATE');
-        // $output = $app['wordpress_service']->create();
+    switch ($intentName) {
+    case 'list':
+        $output = $app['wordpress_service']->showList();
+        break;
+    case 'show':
+        if (array_filter($parameters)) {
+            $output = $app['wordpress_service']->show($parameters['id']);
+        } else {
+            $output = $apiai_response['result']['speech'];
+        }
+        break;
+    case 'create':
+        if (array_filter($parameters)) {
+            $app['wordpress_service']->create($parameters);
+        }
         $output = $apiai_response['result']['speech'];
-    } else {
+        break;
+    case 'edit':
+        if (array_filter($parameters)) {
+            $app['wordpress_service']->edit($parameters);
+        }
         $output = $apiai_response['result']['speech'];
+        break;
     }
 
     $response = [
         'chat_id'    => $data['message']['chat']['id'],
         'text'       => $output,
-        'parse_mode' => 'Markdown'
+        'parse_mode' => 'Html'
     ];
     $result = Longman\TelegramBot\Request::sendMessage($response);
     $log->info($result);
