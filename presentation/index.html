@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Bots</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+  </head>
+  <body>
+    <script src="remark.min.js"></script>
+    <script>
+      remark.macros.scale = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+      };
+      var slideshow = remark.create({
+        sourceUrl: './presentation.md'
+      });
+    </script>
+  </body>
+</html>

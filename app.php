@@ -18,12 +18,12 @@ class ConversationService {
     const DEFAULT_MESSAGE = 'Hola!';
 
     function process($app, $chat_id, $apiai_response) {
-        list($output, $with_keyboard) = $this->processIntent(
+        list($output, $withKeyboard) = $this->processIntent(
             $apiai_response,
             $app
         );
 
-        return $this->getResponse($chat_id, $output);
+        return $this->getResponse($chat_id, $output, $withKeyboard);
     }
 
     function processIntent($apiai_response, $app) {
@@ -38,7 +38,7 @@ class ConversationService {
             case 'list':
                 $output = $wordpressService->showList();
                 break;
-            // We can refactor this part, less verbose, but this way
+            // We should refactor this part, less verbose, but this way
             // it's clear what we do depending on the intent
             case 'show':
                 if (array_filter($parameters)) {
@@ -70,14 +70,14 @@ class ConversationService {
         return array($output, $with_keyboard);
     }
 
-    function getResponse($chat_id, $output) {
+    function getResponse($chat_id, $output, $withKeyboard) {
         $response = [
             'chat_id'    => $chat_id,
             'text'       => $output,
             'parse_mode' => 'Html'
         ];
 
-        if ($with_keyboard) {
+        if ($withKeyboard) {
             $response['reply_markup'] = $this->getKeyboard();
         }
 
@@ -263,26 +263,24 @@ class WordpressApiService {
     }
 }
 
+// Init app
 $log = new Logger('name');
-
 $app = new Silex\Application();
 $app['debug'] = true;
 $app->register(new Silex\Provider\MonologServiceProvider(), array(
     'monolog.logfile' => 'php://stderr'
 ));
 
+// Servicios
 $app['telegram_service'] = function () use ($log) {
     return new TelegramService(TELEGRAM_BOT_KEY, TELEGRAM_BOT_NAME);
 };
-
 $app['conversation_service'] = function () use ($log) {
     return new ConversationService();
 };
-
 $app['wordpress_service'] = function () use ($log) {
     return new WordpressApiService(WORDPRESS_API_URL, WP_USERNAME, WP_PASSWORD);
 };
-
 $app['apiai_service'] = function () use ($log) {
     return new ApiAiService(APIAI_TOKEN);
 };
@@ -302,7 +300,6 @@ $app->post('/webhook',
 
     $telegramResponse = $app['telegram_service']->getBasicData($data);
     $apiaiResponse = $app['apiai_service']->send($telegramResponse['text']);
-    $log->info(json_encode($apiaiResponse));
     $response = $app['conversation_service']->process(
         $app, $telegramResponse['chat_id'], $apiaiResponse);
 
