@@ -2,6 +2,8 @@
 
 namespace OdbBot;
 
+use Longman\TelegramBot\Entities\InlineKeyboard;
+
 
 class ConversationService {
     const DEFAULT_MESSAGE = 'Hola!';
@@ -74,7 +76,7 @@ class ConversationService {
     }
 
     function getKeyboard() {
-        return new Longman\TelegramBot\Entities\InlineKeyboard([
+        return new InlineKeyboard([
             ['text' => 'ver', 'callback_data' => 'ver'],
             ['text' => 'lista', 'callback_data' => 'lista'],
             ['text' => 'crear', 'callback_data' => 'crear'],

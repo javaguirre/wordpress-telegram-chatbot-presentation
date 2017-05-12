@@ -18,6 +18,7 @@ define('WORDPRESS_API_URL', getenv('WORDPRESS_API_URL') . '/wp-json/wp/v2/');
 define('APIAI_TOKEN', getenv('APIAI_TOKEN'));
 define('WP_USERNAME', getenv('WP_USERNAME'));
 define('WP_PASSWORD', getenv('WP_PASSWORD'));
+
 // Application
 $app = new Silex\Application();
 
@@ -59,6 +60,7 @@ $app->post('/webhook',
     $apiaiResponse = $app['apiai_service']->send($telegramResponse['text']);
     $response = $app['conversation_service']->process(
         $app, $telegramResponse['chat_id'], $apiaiResponse);
+    $log->info(json_encode($response));
 
     $result = Longman\TelegramBot\Request::sendMessage($response);
 

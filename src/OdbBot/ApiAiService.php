@@ -2,6 +2,8 @@
 
 namespace OdbBot;
 
+use Requests;
+
 
 class ApiAiService {
     private $url;

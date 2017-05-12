@@ -2,6 +2,8 @@
 
 namespace OdbBot;
 
+use Requests;
+
 
 class WordpressApiService {
     private $url;

@@ -2,11 +2,14 @@
 
 namespace OdbBot;
 
+use Longman\TelegramBot\Telegram;
+
+
 class TelegramService {
     private $telegram;
 
     function __construct($key, $name) {
-        $this->telegram = new Longman\TelegramBot\Telegram($key, $name);
+        $this->telegram = new Telegram($key, $name);
     }
 
     function setWebhook($hook_url) {
