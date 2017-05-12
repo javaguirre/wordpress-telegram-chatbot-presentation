@@ -27,14 +27,14 @@ class WordpressApiService {
         $output = array();
 
         foreach ($posts as $post) {
-            $post_pretty = sprintf(
+            $postPretty = sprintf(
                 '<b>%d %s</b> <a href="%s">enlace</a> %s',
                 $post['id'],
                 $post['title']['rendered'],
                 $post['link'],
                 chr(10) . chr(10)
             );
-            array_push($output, $post_pretty);
+            array_push($output, $postPretty);
         }
 
         return implode(' ', $output);
@@ -69,7 +69,7 @@ class WordpressApiService {
     }
 
     function getShowFormatted($post) {
-        $post_pretty = sprintf(
+        $postPretty = sprintf(
             '<b>%d %s</b> <a href="%s">enlace</a> %s <pre>%s</pre>',
             $post['id'],
             $post['title']['rendered'],
@@ -78,7 +78,7 @@ class WordpressApiService {
             strip_tags($post['excerpt']['rendered'])
         );
 
-        return $post_pretty;
+        return $postPretty;
     }
 
     function edit($parameters) {

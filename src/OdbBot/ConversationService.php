@@ -8,21 +8,21 @@ use Longman\TelegramBot\Entities\InlineKeyboard;
 class ConversationService {
     const DEFAULT_MESSAGE = 'Hola!';
 
-    function process($app, $chat_id, $apiai_response) {
-        list($output, $with_keyboard) = $this->processIntent(
-            $apiai_response,
+    function process($app, $chatId, $apiaiResponse) {
+        list($output, $withKeyboard) = $this->processIntent(
+            $apiaiResponse,
             $app
         );
 
-        return $this->getResponse($chat_id, $output, $with_keyboard);
+        return $this->getResponse($chatId, $output, $withKeyboard);
     }
 
-    function processIntent($apiai_response, $app) {
-        $with_keyboard = true;
+    function processIntent($apiaiResponse, $app) {
+        $withKeyboard = true;
 
-        $intentName = $apiai_response['intentName'];
-        $parameters = $apiai_response['parameters'];
-        $output = $apiai_response['speech'];
+        $intentName = $apiaiResponse['intentName'];
+        $parameters = $apiaiResponse['parameters'];
+        $output = $apiaiResponse['speech'];
         $wordpressService = $app['wordpress_service'];
 
         switch ($intentName) {
@@ -35,21 +35,21 @@ class ConversationService {
                 if (array_filter($parameters)) {
                     $output = $wordpressService->show($parameters['id']);
                 } else {
-                    $with_keyboard = false;
+                    $withKeyboard = false;
                 }
                 break;
             case 'create':
                 if (array_filter($parameters)) {
                     $wordpressService->create($parameters);
                 } else {
-                    $with_keyboard = false;
+                    $withKeyboard = false;
                 }
                 break;
             case 'edit':
                 if (array_filter($parameters)) {
                     $wordpressService->edit($parameters);
                 } else {
-                    $with_keyboard = false;
+                    $withKeyboard = false;
                 }
                 break;
         }
@@ -58,17 +58,17 @@ class ConversationService {
             $output = self::DEFAULT_MESSAGE;
         }
 
-        return array($output, $with_keyboard);
+        return array($output, $withKeyboard);
     }
 
-    function getResponse($chat_id, $output, $with_keyboard) {
+    function getResponse($chatId, $output, $withKeyboard) {
         $response = [
-            'chat_id'    => $chat_id,
+            'chat_id'    => $chatId,
             'text'       => $output,
             'parse_mode' => 'Html'
         ];
 
-        if ($with_keyboard) {
+        if ($withKeyboard) {
             $response['reply_markup'] = $this->getKeyboard();
         }
 

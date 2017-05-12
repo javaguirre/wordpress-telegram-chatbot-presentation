@@ -12,8 +12,8 @@ class TelegramService {
         $this->telegram = new Telegram($key, $name);
     }
 
-    function setWebhook($hook_url) {
-        $result = $this->telegram->setWebhook($hook_url);
+    function setWebhook($hookUrl) {
+        $result = $this->telegram->setWebhook($hookUrl);
 
         if ($result->isOk()) {
             echo $result->getDescription();
@@ -27,12 +27,12 @@ class TelegramService {
     function getBasicData($data) {
         if (array_key_exists('message', $data)) {
             $text = $data['message']['text'];
-            $chat_id = $data['message']['chat']['id'];
+            $chatId = $data['message']['chat']['id'];
         } else {
             $text = $data['callback_query']['data'];
-            $chat_id = $data['callback_query']['message']['chat']['id'];
+            $chatId = $data['callback_query']['message']['chat']['id'];
         }
 
-        return array('text' => $text, 'chat_id' => $chat_id);
+        return array('text' => $text, 'chat_id' => $chatId);
     }
 }
