@@ -14,7 +14,7 @@ class ConversationService {
             $app
         );
 
-        return $this->getResponse($chat_id, $output);
+        return $this->getResponse($chat_id, $output, $with_keyboard);
     }
 
     function processIntent($apiai_response, $app) {
@@ -61,7 +61,7 @@ class ConversationService {
         return array($output, $with_keyboard);
     }
 
-    function getResponse($chat_id, $output) {
+    function getResponse($chat_id, $output, $with_keyboard) {
         $response = [
             'chat_id'    => $chat_id,
             'text'       => $output,

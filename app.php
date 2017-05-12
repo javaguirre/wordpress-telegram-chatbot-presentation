@@ -60,7 +60,6 @@ $app->post('/webhook',
     $apiaiResponse = $app['apiai_service']->send($telegramResponse['text']);
     $response = $app['conversation_service']->process(
         $app, $telegramResponse['chat_id'], $apiaiResponse);
-    $log->info(json_encode($response));
 
     $result = Longman\TelegramBot\Request::sendMessage($response);
 
