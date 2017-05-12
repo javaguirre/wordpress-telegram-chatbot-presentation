@@ -14,6 +14,75 @@ define('WP_USERNAME', getenv('WP_USERNAME'));
 define('WP_PASSWORD', getenv('WP_PASSWORD'));
 
 
+class ConversationService {
+    const DEFAULT_MESSAGE = 'Hola!';
+
+    function process($app, $chat_id, $apiai_response) {
+        $intentName = $apiai_response['intentName'];
+        $parameters = $apiai_response['parameters'];
+        $output = $apiai_response['speech'];
+
+        $with_keyboard = true;
+
+        switch ($intentName) {
+        case 'list':
+            $output = $app['wordpress_service']->showList();
+            break;
+        case 'show':
+            if (array_filter($parameters)) {
+                $output = $app['wordpress_service']->show($parameters['id']);
+            } else {
+                $with_keyboard = false;
+            }
+            break;
+        case 'create':
+            if (array_filter($parameters)) {
+                $app['wordpress_service']->create($parameters);
+            } else {
+                $with_keyboard = false;
+            }
+            break;
+        case 'edit':
+            if (array_filter($parameters)) {
+                $app['wordpress_service']->edit($parameters);
+            } else {
+                $with_keyboard = false;
+            }
+            break;
+        }
+
+        if (!$output) {
+            $output = self::DEFAULT_MESSAGE;
+        }
+
+        return $this->getResponse($chat_id, $output);
+    }
+
+    function getResponse($chat_id, $output) {
+        $response = [
+            'chat_id'    => $chat_id,
+            'text'       => $output,
+            'parse_mode' => 'Html'
+        ];
+
+        if ($with_keyboard) {
+            $response['reply_markup'] = $this->getKeyboard();
+        }
+
+        return $response;
+    }
+
+    function getKeyboard() {
+        return new Longman\TelegramBot\Entities\InlineKeyboard([
+            ['text' => 'ver', 'callback_data' => 'ver'],
+            ['text' => 'lista', 'callback_data' => 'lista'],
+            ['text' => 'crear', 'callback_data' => 'crear'],
+            ['text' => 'editar', 'callback_data' => 'editar'],
+        ]);
+    }
+}
+
+
 class TelegramService {
     private $telegram;
 
@@ -31,6 +100,18 @@ class TelegramService {
 
     function handle() {
         $this->telegram->handle();
+    }
+
+    function getBasicData($data) {
+        if (array_key_exists('message', $data)) {
+            $text = $data['message']['text'];
+            $chat_id = $data['message']['chat']['id'];
+        } else {
+            $text = $data['callback_query']['data'];
+            $chat_id = $data['callback_query']['message']['chat']['id'];
+        }
+
+        return array('text' => $text, 'chat_id' => $chat_id);
     }
 }
 
@@ -165,10 +246,6 @@ class WordpressApiService {
     }
 }
 
-class ConversationService {
-    private $intents = array('create', 'get', 'list');
-}
-
 $hook_url = WEBHOOK_URL;
 $log = new Logger('name');
 
@@ -180,6 +257,10 @@ $app->register(new Silex\Provider\MonologServiceProvider(), array(
 
 $app['telegram_service'] = function () use ($log) {
     return new TelegramService(TELEGRAM_BOT_KEY, TELEGRAM_BOT_NAME);
+};
+
+$app['conversation_service'] = function () use ($log) {
+    return new ConversationService();
 };
 
 $app['wordpress_service'] = function () use ($log) {
@@ -196,77 +277,19 @@ $app->get('/init', function() use ($app, $log, $hook_url) {
     return $app->json(array('init' => 'telegram'));
 });
 
-$app->post('/webhook', function(Symfony\Component\HttpFoundation\Request $request) use ($app, $log) {
+$app->post('/webhook',
+           function(Symfony\Component\HttpFoundation\Request $request)
+           use ($app, $log) {
+
     $data = json_decode($request->getContent(), true);
-    $log->info($request->getContent());
     $app['telegram_service']->handle();
 
-    if (array_key_exists('message', $data)) {
-        $text = $data['message']['text'];
-        $chat_id = $data['message']['chat']['id'];
-    } else {
-        $text = $data['callback_query']['data'];
-        $chat_id = $data['callback_query']['message']['chat']['id'];
-    }
-    $apiai_response = $app['apiai_service']->send($text);
-    $intentName = $apiai_response['intentName'];
-    $parameters = $apiai_response['parameters'];
-    $output = $apiai_response['speech'];
-
-    $with_keyboard = true;
-    $inline_keyboard = new Longman\TelegramBot\Entities\InlineKeyboard([
-        ['text' => 'ver', 'callback_data' => 'ver'],
-        ['text' => 'lista', 'callback_data' => 'lista'],
-        ['text' => 'crear', 'callback_data' => 'crear'],
-        ['text' => 'editar', 'callback_data' => 'editar'],
-    ]);
-
-    switch ($intentName) {
-    case 'list':
-        $output = $app['wordpress_service']->showList();
-        break;
-    case 'show':
-        if (array_filter($parameters)) {
-            $output = $app['wordpress_service']->show($parameters['id']);
-        } else {
-            $output = $apiai_response['speech'];
-            $with_keyboard = false;
-        }
-        break;
-    case 'create':
-        if (array_filter($parameters)) {
-            $app['wordpress_service']->create($parameters);
-        } else {
-            $output = $apiai_response['result']['speech'];
-            $with_keyboard = false;
-        }
-        break;
-    case 'edit':
-        if (array_filter($parameters)) {
-            $app['wordpress_service']->edit($parameters);
-        } else {
-            $output = $apiai_response['result']['speech'];
-            $with_keyboard = false;
-        }
-        break;
-    }
-
-    if (!$output) {
-        $output = 'Hola!';
-    }
-
-    $response = [
-        'chat_id'    => $chat_id,
-        'text'       => $output,
-        'parse_mode' => 'Html'
-    ];
-
-    if ($with_keyboard) {
-        $response['reply_markup'] = $inline_keyboard;
-    }
+    $telegramResponse = $app['telegram_service']->getBasicData($data);
+    $apiaiResponse = $app['apiai_service']->send($telegramResponse['text']);
+    $response = $app['conversation_service']->process(
+        $app, $telegramResponse['chat_id'], $apiaiResponse);
 
     $result = Longman\TelegramBot\Request::sendMessage($response);
-    $log->info($result);
 
     return $app->json(array('webhook' => 'ok'));
 });
