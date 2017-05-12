@@ -6,7 +6,7 @@ class: center, middle, inverse
 
 ---
 
-class: inverse, center
+class: center
 
 # @javaguirre
 
