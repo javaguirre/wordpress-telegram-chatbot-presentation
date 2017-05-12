@@ -18,44 +18,53 @@ class ConversationService {
     const DEFAULT_MESSAGE = 'Hola!';
 
     function process($app, $chat_id, $apiai_response) {
+        list($output, $with_keyboard) = $this->processIntent(
+            $apiai_response,
+            $app
+        );
+
+        return $this->getResponse($chat_id, $output);
+    }
+
+    function processIntent($apiai_response, $app) {
+        $with_keyboard = true;
+
         $intentName = $apiai_response['intentName'];
         $parameters = $apiai_response['parameters'];
         $output = $apiai_response['speech'];
 
-        $with_keyboard = true;
-
         switch ($intentName) {
-        case 'list':
-            $output = $app['wordpress_service']->showList();
-            break;
-        case 'show':
-            if (array_filter($parameters)) {
-                $output = $app['wordpress_service']->show($parameters['id']);
-            } else {
-                $with_keyboard = false;
-            }
-            break;
-        case 'create':
-            if (array_filter($parameters)) {
-                $app['wordpress_service']->create($parameters);
-            } else {
-                $with_keyboard = false;
-            }
-            break;
-        case 'edit':
-            if (array_filter($parameters)) {
-                $app['wordpress_service']->edit($parameters);
-            } else {
-                $with_keyboard = false;
-            }
-            break;
+            case 'list':
+                $output = $app['wordpress_service']->showList();
+                break;
+            case 'show':
+                if (array_filter($parameters)) {
+                    $output = $app['wordpress_service']->show($parameters['id']);
+                } else {
+                    $with_keyboard = false;
+                }
+                break;
+            case 'create':
+                if (array_filter($parameters)) {
+                    $app['wordpress_service']->create($parameters);
+                } else {
+                    $with_keyboard = false;
+                }
+                break;
+            case 'edit':
+                if (array_filter($parameters)) {
+                    $app['wordpress_service']->edit($parameters);
+                } else {
+                    $with_keyboard = false;
+                }
+                break;
         }
 
         if (!$output) {
             $output = self::DEFAULT_MESSAGE;
         }
 
-        return $this->getResponse($chat_id, $output);
+        return array($output, $with_keyboard);
     }
 
     function getResponse($chat_id, $output) {
@@ -286,6 +295,7 @@ $app->post('/webhook',
 
     $telegramResponse = $app['telegram_service']->getBasicData($data);
     $apiaiResponse = $app['apiai_service']->send($telegramResponse['text']);
+    $log->info(json_encode($apiaiResponse));
     $response = $app['conversation_service']->process(
         $app, $telegramResponse['chat_id'], $apiaiResponse);
 
